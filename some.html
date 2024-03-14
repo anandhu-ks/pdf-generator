@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <title>D3.js Line Graph with scaleTime</title>
+    <style>
+      /* Add CSS styles here if needed */
+    </style>
+  </head>
+  <body>
+    <div id="chart-container"></div>
+
+    <script>
+      const data = [
+        {
+          bank_balance: "-4500000.00",
+          cash_balance: "67380.00",
+          end_of_month: "2023-04-30",
+          total_balance: "-4432620.00",
+        },
+        {
+          bank_balance: "-547164.00",
+          cash_balance: "-147600.00",
+          end_of_month: "2023-05-31",
+          total_balance: "-694764.00",
+        },
+        {
+          bank_balance: "900000.00",
+          cash_balance: "0.00",
+          end_of_month: "2023-06-30",
+          total_balance: "900000.00",
+        },
+        {
+          bank_balance: "-1677402.00",
+          cash_balance: "0.00",
+          end_of_month: "2023-07-31",
+          total_balance: "-1677402.00",
+        },
+        {
+          bank_balance: "2400000.00",
+          cash_balance: "0.00",
+          end_of_month: "2023-08-31",
+          total_balance: "2400000.00",
+        },
+        {
+          bank_balance: "2375000.00",
+          cash_balance: "0.00",
+          end_of_month: "2023-09-30",
+          total_balance: "2375000.00",
+        },
+        {
+          bank_balance: "1125000.00",
+          cash_balance: "0.00",
+          end_of_month: "2023-10-31",
+          total_balance: "1125000.00",
+        },
+        {
+          bank_balance: "114240.00",
+          cash_balance: "1938000.00",
+          end_of_month: "2023-11-30",
+          total_balance: "2052240.00",
+        },
+        {
+          bank_balance: "",
+          cash_balance: "",
+          end_of_month: "2023-12-31",
+          total_balance: "",
+        },
+        {
+          bank_balance: "1125000.00",
+          cash_balance: "0.00",
+          end_of_month: "2024-01-31",
+          total_balance: "1125000.00",
+        },
+        {
+          bank_balance: "114240.00",
+          cash_balance: "1938000.00",
+          end_of_month: "2024-02-29",
+          total_balance: "2052240.00",
+        },
+        {
+          bank_balance: "",
+          cash_balance: "",
+          end_of_month: "2024-03-31",
+          total_balance: "",
+        },
+      ];
+
+      data.forEach((el)=>CashBankSummaryTransformer(el))
+
+      function CashBankSummaryTransformer(data) {
+        data.modified_balance =
+          +data.total_balance <= 0 ? 0 : +data.total_balance;
+        const date = new Date(data.end_of_month);
+        date.setDate(1);
+        date.setHours(0, 0, 0, 0);
+        data.date = new Date(date);
+        return data;
+      }
+
+      // Set the dimensions and margins of the graph
+      const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+      const width =
+        parseInt(d3.select("#chart-container").style("width")) -
+        margin.right -
+        margin.left;
+      const height = 400 - margin.top - margin.bottom;
+
+      // Append the SVG object to the chart container
+      const svg = d3
+        .select("#chart-container")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      // X scale and axis (scaleTime)
+      const x = d3
+        .scaleTime()
+        .domain(d3.extent(data, (d) => d.date))
+        .range([0, width]);
+
+      svg
+        .append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(
+          d3
+            .axisBottom(x)
+            .tickSizeInner(-height)
+            .tickSizeOuter(0)
+            .tickPadding(12)
+            .tickValues(data.map((d) => d.date))
+            .tickFormat(d3.timeFormat("%b"))
+        )
+        .style("font-family", '"Montserrat", sans-serif, sans-serif')
+        .style("color", "#767676")
+        .style("font-size", "10px")
+        .style("font-weight", "600");
+
+      const tickIntervalYMax = d3.max(data, (d) => +d.modified_balance);
+      const tickIntervalY = Math.ceil(tickIntervalYMax / 5);
+
+      // Y scale and axis
+      const y = d3
+        .scaleLinear()
+        .domain([0, d3.max(data, (d) => d.modified_balance)])
+        .range([height, 0]);
+
+      svg
+        .append("g")
+        .call(
+          d3
+            .axisLeft(y)
+            .tickSizeInner(-width)
+            .tickSizeOuter(0)
+            .tickFormat(d3.format(".2s"))
+            .tickPadding(12)
+            .ticks(6)
+            .tickValues(
+              d3.range(0, tickIntervalYMax + tickIntervalY, tickIntervalY)
+            )
+        )
+        .style("font-family", '"Montserrat", sans-serif, sans-serif')
+        .style("color", "#767676")
+        .style("font-size", "10px")
+        .style("font-weight", "600");
+      // Define the line
+      const line = d3
+        .line()
+        .x((d) => x(d.date))
+        .y((d) => y(d.modified_balance))
+        .curve(d3.curveMonotoneX);
+
+      // Add the line
+      svg
+        .append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "#9747FF")
+        .attr("stroke-width", 2.5)
+        .attr("d", line);
+    </script>
+  </body>
+</html>

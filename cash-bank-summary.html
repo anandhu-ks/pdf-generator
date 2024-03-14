@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cash Bank Line Graph</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://open-frontend-bucket.s3.amazonaws.com/open-money/d3/d3.min.js"></script>
+    <style>
+      /* Add your CSS styles here */
+      body {
+        font-family: "Montserrat", sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      #cash_bank_line_graph {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cash_bank_line_graph"></div>
+
+    <div id="my_dataviz"></div>
+
+    <script>
+      // Sample data
+      const data = [
+        { date: new Date("2022-03-01"), modified_balance: 1000 },
+        { date: new Date("2022-04-01"), modified_balance: 1500 },
+        { date: new Date("2022-05-01"), modified_balance: 2000 },
+        { date: new Date("2022-06-01"), modified_balance: 1000 },
+        { date: new Date("2022-07-01"), modified_balance: 1500 },
+        { date: new Date("2022-08-01"), modified_balance: 2000 },
+        { date: new Date("2022-09-01"), modified_balance: 1000 },
+        { date: new Date("2022-10-01"), modified_balance: 1500 },
+        { date: new Date("2022-11-01"), modified_balance: 2000 },
+
+        // Add more data points as needed
+      ];
+
+      // Call the function to plot the graph
+      plotGraph(data);
+
+      function plotGraph(cash_bank_data) {
+        const element_id = "div#cash_bank_line_graph";
+
+        //Remove plot if already present
+        const graph = d3.select(element_id).select("svg");
+        graph.remove();
+
+        // Set the dimensions and margins of the graph
+        const margin = { top: 10, right: 30, bottom: 30, left: 50 };
+        const width = parseInt(d3.select(element_id).style("width")) - 100;
+        const height = 300 - margin.top - margin.bottom;
+
+        // Append the SVG object to the body of the page
+        const svg = d3
+          .select(element_id)
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3
+          .scaleTime()
+          .domain(d3.extent(cash_bank_data, (d) => d.date))
+          .range([0, width]);
+
+        const xAxis = svg
+          .append("g")
+          .style("font-family", '"Montserrat", sans-serif, sans-serif')
+          .attr("transform", `translate(0, ${height})`)
+          .call(
+            d3
+              .axisBottom(x)
+              .tickFormat(d3.timeFormat("%b"))
+              .tickSizeInner(-height)
+              .tickSizeOuter(0)
+              .tickPadding(12)
+          );
+
+        xAxis
+          .selectAll(".tick text")
+          .style("text-anchor", "center")
+          .attr("fill", "#767676")
+          .style("font-size", "10px")
+          .style("font-weight", "600");
+        // Format ticks as abbreviated month names
+
+        const tickIntervalYMax = d3.max(
+          cash_bank_data,
+          (d) => +d.modified_balance
+        );
+        const tickIntervalY = Math.ceil(tickIntervalYMax / 5);
+
+        // Add Y axis
+        const y = d3
+          .scaleLinear()
+          .domain([0, tickIntervalYMax])
+          .range([height, 0]);
+        const yAxis = svg
+          .append("g")
+          .style("font-family", '"Montserrat", sans-serif, sans-serif')
+          .style("color", "#767676")
+          .call(
+            d3
+              .axisLeft(y)
+              .tickSizeInner(-width)
+              .tickSizeOuter(0)
+              .tickPadding(12)
+              .tickFormat(d3.format(".2s"))
+              .ticks(6)
+              .tickValues(
+                d3.range(0, tickIntervalYMax + tickIntervalY, tickIntervalY)
+              )
+          );
+
+        // Add the line
+        svg
+          .append("path")
+          .datum(cash_bank_data)
+          .attr("fill", "none")
+          .attr("stroke", "#9747FF")
+          .attr("stroke-width", 2.5)
+          .attr(
+            "d",
+            d3
+              .line()
+              .x((d) => x(d.date))
+              .y((d) => y(d.modified_balance))
+              .curve(d3.curveMonotoneX)
+          );
+      }
+
+      function plotGraph1() {
+        // set the dimensions and margins of the graph
+        const margin = { top: 30, right: 30, bottom: 70, left: 60 },
+          width = 460 - margin.left - margin.right,
+          height = 400 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        const svg = d3
+          .select("#my_dataviz")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        // Parse the Data
+        d3.csv(
+          "https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum_header.csv"
+        ).then(function (data) {
+          // sort data
+          data.sort(function (b, a) {
+            return a.Value - b.Value;
+          });
+
+          // X axis
+          const x = d3
+            .scaleBand()
+            .range([0, width])
+            .domain(data.map((d) => d.Country))
+            .padding(0.2);
+          svg
+            .append("g")
+            .attr("transform", `translate(0, ${height})`)
+            .call(d3.axisBottom(x))
+            .selectAll("text")
+            .attr("transform", "translate(-10,0)rotate(-45)")
+            .style("text-anchor", "end");
+
+          // Add Y axis
+          const y = d3.scaleLinear().domain([0, 13000]).range([height, 0]);
+          svg.append("g").call(d3.axisLeft(y));
+
+          // Bars
+          svg
+            .selectAll("mybar")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("x", (d) => x(d.Country))
+            .attr("y", (d) => y(d.Value))
+            .attr("width", x.bandwidth())
+            .attr("height", (d) => height - y(d.Value))
+            .attr("fill", "#69b3a2");
+        });
+      }
+   
+   
+   plotGraph1()
+   </script>
+  </body>
+</html>
